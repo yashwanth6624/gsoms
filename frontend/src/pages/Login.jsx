@@ -48,7 +48,11 @@ const Login = () => {
         await login(email, password);
       }
     } catch (err) {
-      setError(err.message || 'Authentication failed. Please try again.');
+      let msg = err.message || 'Authentication failed. Please try again.';
+      if (msg.toLowerCase().includes('failed to fetch') || msg.toLowerCase().includes('networkerror')) {
+        msg = 'Connection to server failed. Note: The free cloud backend takes ~50 seconds to wake up on the first request. Please wait 30 seconds and try again!';
+      }
+      setError(msg);
     } finally {
       setLoading(false);
     }

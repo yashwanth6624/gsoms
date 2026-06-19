@@ -1,12 +1,21 @@
 import React from 'react';
 
-const Sidebar = ({ activePage, setActivePage, user, onLogout }) => {
+const Sidebar = ({ activePage, setActivePage, user, onLogout, isOpen, setIsOpen }) => {
   if (!user) return null;
 
   const isAdmin = user.role === 'admin';
 
+  const handleNavigate = (page) => {
+    setActivePage(page);
+    if (setIsOpen) {
+      setIsOpen(false);
+    }
+  };
+
   return (
-    <div className="sidebar">
+    <div className={`sidebar ${isOpen ? 'open' : ''}`}>
+      <button className="sidebar-close-btn no-print" onClick={() => setIsOpen(false)} aria-label="Close sidebar">✕</button>
+      
       <div className="sidebar-brand">
         Manikanta Enterprises
         <span className="sidebar-brand-sub">Order & Supply Portal</span>
@@ -16,7 +25,7 @@ const Sidebar = ({ activePage, setActivePage, user, onLogout }) => {
         {/* Dashboard Link for everyone */}
         <li className="sidebar-item">
           <a
-            onClick={() => setActivePage('dashboard')}
+            onClick={() => handleNavigate('dashboard')}
             className={`sidebar-link ${activePage === 'dashboard' || activePage === 'order-detail' || activePage === 'invoice-preview' ? 'active' : ''}`}
           >
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -30,7 +39,7 @@ const Sidebar = ({ activePage, setActivePage, user, onLogout }) => {
         {!isAdmin && (
           <li className="sidebar-item">
             <a
-              onClick={() => setActivePage('place-order')}
+              onClick={() => handleNavigate('place-order')}
               className={`sidebar-link ${activePage === 'place-order' ? 'active' : ''}`}
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -46,7 +55,7 @@ const Sidebar = ({ activePage, setActivePage, user, onLogout }) => {
           <>
             <li className="sidebar-item">
               <a
-                onClick={() => setActivePage('stock')}
+                onClick={() => handleNavigate('stock')}
                 className={`sidebar-link ${activePage === 'stock' ? 'active' : ''}`}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
@@ -58,7 +67,7 @@ const Sidebar = ({ activePage, setActivePage, user, onLogout }) => {
             
             <li className="sidebar-item">
               <a
-                onClick={() => setActivePage('insights')}
+                onClick={() => handleNavigate('insights')}
                 className={`sidebar-link ${activePage === 'insights' ? 'active' : ''}`}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">

@@ -15,6 +15,7 @@ const AppContent = () => {
   const [activePage, setActivePage] = useState('dashboard');
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [toasts, setToasts] = useState([]);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const showToast = (message, type = 'success') => {
     const id = Date.now();
@@ -116,8 +117,21 @@ const AppContent = () => {
         setActivePage={setActivePage}
         user={user}
         onLogout={logout}
+        isOpen={sidebarOpen}
+        setIsOpen={setSidebarOpen}
       />
+      {sidebarOpen && <div className="sidebar-mobile-backdrop no-print" onClick={() => setSidebarOpen(false)}></div>}
       <main className="main-content">
+        <header className="mobile-header no-print">
+          <button className="mobile-menu-toggle" onClick={() => setSidebarOpen(true)} aria-label="Toggle sidebar">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+          <span className="mobile-brand">Manikanta Enterprises</span>
+        </header>
         {renderPage()}
       </main>
       
