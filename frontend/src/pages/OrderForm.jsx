@@ -243,71 +243,75 @@ const OrderForm = ({ setActivePage, setSelectedOrderId, showToast }) => {
           <div className="card-body">
             {items.map((item, index) => (
               <div key={index} className="order-item-row">
-                <div className="form-group flex-1" style={{ margin: 0 }}>
-                  <label className="form-label" htmlFor={`prod-sel-${index}`}>Select Product *</label>
-                  <select
-                    id={`prod-sel-${index}`}
-                    className="form-select"
-                    value={item.product_id}
-                    onChange={(e) => handleItemProductChange(index, e.target.value)}
-                    required
-                  >
-                    <option value="">-- Choose Product --</option>
-                    {products.map(p => (
-                      <option key={p.id} value={p.id} disabled={p.available_qty <= 0}>
-                        {p.name} (SKU: {p.sku}) — Avail: {p.available_qty} {p.unit}
-                      </option>
-                    ))}
-                  </select>
+                <div className="order-item-header">
+                  <span className="order-item-index">Item #{index + 1}</span>
+                  {items.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeItemRow(index)}
+                      className="btn-remove-item"
+                    >
+                      ✕ Remove
+                    </button>
+                  )}
                 </div>
+                
+                <div className="order-item-fields">
+                  <div className="form-group product-select-group" style={{ margin: 0 }}>
+                    <label className="form-label" htmlFor={`prod-sel-${index}`}>Select Product *</label>
+                    <select
+                      id={`prod-sel-${index}`}
+                      className="form-select"
+                      value={item.product_id}
+                      onChange={(e) => handleItemProductChange(index, e.target.value)}
+                      required
+                    >
+                      <option value="">-- Choose Product --</option>
+                      {products.map(p => (
+                        <option key={p.id} value={p.id} disabled={p.available_qty <= 0}>
+                          {p.name} (SKU: {p.sku}) — Avail: {p.available_qty} {p.unit}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                {item.product_id && (
-                  <>
-                    <div style={{ width: '80px' }}>
-                      <span className="form-label">SKU</span>
-                      <div className="form-input" style={{ backgroundColor: '#F1F5F9', border: '1px solid #CBD5E1', fontSize: '0.85rem', color: '#64748B' }}>
-                        {item.sku}
+                  {item.product_id ? (
+                    <div className="order-item-specs">
+                      <div className="spec-box">
+                        <span className="spec-label">SKU</span>
+                        <span className="spec-value">{item.sku}</span>
+                      </div>
+                      <div className="spec-box">
+                        <span className="spec-label">Price</span>
+                        <span className="spec-value">{formatCurrency(item.price)}</span>
+                      </div>
+                      <div className="spec-box">
+                        <span className="spec-label">Unit</span>
+                        <span className="spec-value">{item.unit}</span>
                       </div>
                     </div>
-                    <div style={{ width: '90px' }}>
-                      <span className="form-label">Price</span>
-                      <div className="form-input" style={{ backgroundColor: '#F1F5F9', border: '1px solid #CBD5E1', fontSize: '0.85rem', color: '#64748B' }}>
-                        {formatCurrency(item.price)}
-                      </div>
-                    </div>
-                    <div style={{ width: '80px' }}>
-                      <span className="form-label">Unit</span>
-                      <div className="form-input" style={{ backgroundColor: '#F1F5F9', border: '1px solid #CBD5E1', fontSize: '0.85rem', color: '#64748B', textAlign: 'center' }}>
-                        {item.unit}
-                      </div>
-                    </div>
-                  </>
-                )}
+                  ) : (
+                    <div className="order-item-specs-empty">Select a product to view details</div>
+                  )}
 
-                <div style={{ width: '100px' }}>
-                  <label className="form-label" htmlFor={`prod-qty-${index}`}>Quantity *</label>
-                  <input
-                    id={`prod-qty-${index}`}
-                    type="number"
-                    min="1"
-                    max={item.maxStock || undefined}
-                    className={`form-input ${item.quantity > item.maxStock ? 'text-danger' : ''}`}
-                    value={item.quantity}
-                    onChange={(e) => handleItemQtyChange(index, e.target.value)}
-                    required
-                    disabled={!item.product_id}
-                  />
+                  <div className="form-group quantity-group" style={{ margin: 0 }}>
+                    <label className="form-label" htmlFor={`prod-qty-${index}`}>Quantity *</label>
+                    <div className="quantity-input-wrapper">
+                      <input
+                        id={`prod-qty-${index}`}
+                        type="number"
+                        min="1"
+                        max={item.maxStock || undefined}
+                        className={`form-input quantity-input ${item.quantity > item.maxStock ? 'text-danger' : ''}`}
+                        value={item.quantity}
+                        onChange={(e) => handleItemQtyChange(index, e.target.value)}
+                        required
+                        disabled={!item.product_id}
+                      />
+                      {item.unit && <span className="quantity-unit-label">{item.unit}</span>}
+                    </div>
+                  </div>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={() => removeItemRow(index)}
-                  className="btn btn-danger"
-                  style={{ height: '38px', padding: '0.375rem 0.75rem' }}
-                  disabled={items.length === 1}
-                >
-                  ✕
-                </button>
               </div>
             ))}
 

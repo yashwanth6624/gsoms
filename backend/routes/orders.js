@@ -3,17 +3,33 @@ const router = express.Router();
 const { query, get, run } = require('../db');
 const { authenticateToken, requireRole } = require('../middleware/auth');
 
-// Helper to wrap SQLite commands in a transaction
+// Helper to wrap SQLite commands in a transaction sequentially (serialized queue)
+let transactionQueue = Promise.resolve();
+
 const runTransaction = async (callback) => {
-  await run('BEGIN TRANSACTION');
-  try {
-    const result = await callback();
-    await run('COMMIT');
-    return result;
-  } catch (error) {
-    await run('ROLLBACK');
-    throw error;
-  }
+  return new Promise((resolve, reject) => {
+    transactionQueue = transactionQueue.then(async () => {
+      try {
+        await run('BEGIN IMMEDIATE TRANSACTION');
+        try {
+          const result = await callback();
+          await run('COMMIT');
+          resolve(result);
+        } catch (error) {
+          try {
+            await run('ROLLBACK');
+          } catch (rollbackErr) {
+            console.error('Failed to rollback transaction:', rollbackErr);
+          }
+          reject(error);
+        }
+      } catch (beginError) {
+        reject(beginError);
+      }
+    }).catch((queueErr) => {
+      console.error('Unhandled queue error:', queueErr);
+    });
+  });
 };
 
 // POST /api/orders - Create a new order (Customer only)

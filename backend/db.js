@@ -2,7 +2,13 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
 const dbPath = path.join(__dirname, 'database.db');
-const db = new sqlite3.Database(dbPath);
+const db = new sqlite3.Database(dbPath, (err) => {
+  if (err) {
+    console.error('DB connection error:', err);
+  } else {
+    db.configure('busyTimeout', 10000);
+  }
+});
 
 // Helper wrappers to use Promises
 const query = (sql, params = []) => {
@@ -46,8 +52,10 @@ const run = (sql, params = []) => {
 
 // Database schema initialization
 const initDb = async () => {
-  // Enable foreign keys
+  // Enable foreign keys, WAL mode, and busy timeout
   await run('PRAGMA foreign_keys = ON;');
+  await run('PRAGMA journal_mode = WAL;');
+  await run('PRAGMA busy_timeout = 10000;');
 
   // 1. users table
   await run(`

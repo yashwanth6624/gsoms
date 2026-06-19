@@ -827,15 +827,155 @@ a {
 
 /* Order Item Form Group */
 .order-item-row {
-  display: flex;
-  gap: 1rem;
-  align-items: flex-end;
-  margin-bottom: 1rem;
   background-color: #FAFBFC;
-  padding: 1rem;
+  padding: 1.25rem;
   border-radius: var(--border-radius);
   border: 1px solid var(--border-color);
+  margin-bottom: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  transition: all 0.2s ease;
 }
+
+.order-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px dashed var(--border-color);
+  padding-bottom: 0.75rem;
+}
+
+.order-item-index {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--primary-color);
+}
+
+.btn-remove-item {
+  background: none;
+  border: 1px solid #FCA5A5;
+  color: var(--color-error);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  transition: all 0.2s;
+  background-color: #FFF5F5;
+}
+
+.btn-remove-item:hover {
+  background-color: #FEE2E2;
+  border-color: #F87171;
+}
+
+.order-item-fields {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+.order-item-specs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  background-color: #F8FAFC;
+  padding: 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #E2E8F0;
+}
+
+.order-item-specs-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94A3B8;
+  font-size: 0.85rem;
+  font-style: italic;
+  background-color: #F8FAFC;
+  border: 1px dashed #E2E8F0;
+  padding: 0.75rem;
+  border-radius: 6px;
+  text-align: center;
+  min-height: 44px;
+}
+
+.spec-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.spec-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #64748B;
+  text-transform: uppercase;
+  margin-bottom: 0.2rem;
+}
+
+.spec-value {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #1E293B;
+}
+
+.quantity-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.quantity-input-wrapper .form-input {
+  padding-right: 3rem;
+  width: 100%;
+}
+
+.quantity-unit-label {
+  position: absolute;
+  right: 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #64748B;
+  pointer-events: none;
+  background-color: #E2E8F0;
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+}
+
+/* Desktop layout overrides */
+@media (min-width: 768px) {
+  .order-item-fields {
+    grid-template-columns: 2.2fr 2.2fr 1.2fr;
+    align-items: flex-end;
+  }
+  
+  .order-item-specs {
+    padding: 0.5rem;
+    height: 38px;
+    align-items: center;
+    border-color: #CBD5E1;
+  }
+  
+  .order-item-specs-empty {
+    height: 38px;
+    padding: 0;
+    min-height: auto;
+  }
+  
+  .spec-box {
+    align-items: center;
+  }
+}
+
 
 /* Invoices Print Styles */
 @media print {
@@ -933,6 +1073,11 @@ a {
   
   /* Stack tables and elements on mobile */
   .grid-2 {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+
+  .grid-cols-2 {
     grid-template-columns: 1fr !important;
     gap: 1rem !important;
   }
