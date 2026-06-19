@@ -12,6 +12,7 @@ const Login = () => {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [loadingText, setLoadingText] = useState('Processing...');
 
   // Set default credentials when switching tabs
   useEffect(() => {
@@ -32,6 +33,11 @@ const Login = () => {
     setError('');
     setSuccess('');
     setLoading(true);
+    setLoadingText('Processing...');
+
+    const slowTimer = setTimeout(() => {
+      setLoadingText('Connecting to server (Render cold start)... This may take up to 50 seconds. Please wait...');
+    }, 3000);
 
     try {
       if (isRegistering) {
@@ -54,6 +60,7 @@ const Login = () => {
       }
       setError(msg);
     } finally {
+      clearTimeout(slowTimer);
       setLoading(false);
     }
   };
@@ -183,10 +190,10 @@ const Login = () => {
           <button
             type="submit"
             className="btn btn-primary"
-            style={{ width: '100%', marginTop: '0.5rem' }}
+            style={{ width: '100%', marginTop: '0.5rem', whiteSpace: 'normal', height: 'auto', minHeight: '38px', padding: '0.5rem 1rem' }}
             disabled={loading}
           >
-            {loading ? 'Processing...' : isRegistering ? 'Register Account' : 'Sign In'}
+            {loading ? loadingText : isRegistering ? 'Register Account' : 'Sign In'}
           </button>
         </form>
 
