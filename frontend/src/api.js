@@ -117,5 +117,10 @@ export const api = {
   // Insights Endpoints
   getInsights: async () => {
     return request('/insights');
+  },
+
+  // Alerts Endpoints
+  getAlerts: async () => {
+    return request('/alerts');
   }
 };

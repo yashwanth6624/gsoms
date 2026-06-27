@@ -7,6 +7,7 @@ const productRoutes = require('./routes/products');
 const orderRoutes = require('./routes/orders');
 const invoiceRoutes = require('./routes/invoices');
 const insightRoutes = require('./routes/insights');
+const alertsRoutes = require('./routes/alerts');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -33,6 +34,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/invoices', invoiceRoutes);
 app.use('/api/insights', insightRoutes);
+app.use('/api/alerts', alertsRoutes);
 
 // Base route healthcheck
 app.get('/health', (req, res) => {

@@ -15,8 +15,69 @@ const Dashboard = ({ user, setActivePage, setSelectedOrderId, showToast }) => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
+  // Live Alerts states
+  const [alerts, setAlerts] = useState([]);
+  const [alertsLoading, setAlertsLoading] = useState(false);
+  const [isPanelOpen, setIsPanelOpen] = useState(true);
+  const [dismissedAlerts, setDismissedAlerts] = useState(new Set());
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [editQty, setEditQty] = useState('');
+
   const isAdmin = user.role === 'admin';
   const hasFilters = statusFilter || customerFilter || startDate || endDate;
+
+  const fetchAlerts = async () => {
+    try {
+      setAlertsLoading(true);
+      const data = await api.getAlerts();
+      setAlerts(data);
+    } catch (err) {
+      console.error('Failed to fetch alerts:', err);
+    } finally {
+      setAlertsLoading(false);
+    }
+  };
+
+  const saveStockUpdate = async (productId) => {
+    const qty = parseInt(editQty, 10);
+    if (isNaN(qty) || qty < 0) {
+      if (showToast) {
+        showToast('Stock quantity must be a non-negative integer.', 'error');
+      }
+      return;
+    }
+    try {
+      await api.updateProductStock(productId, qty);
+      if (showToast) {
+        showToast(`Stock updated successfully.`, 'success');
+      }
+      setEditingProduct(null);
+      fetchAlerts(); // Refresh alerts list
+      fetchOrders(); // Refresh dashboard KPIs
+    } catch (err) {
+      if (showToast) {
+        showToast(`Failed to update stock: ${err.message}`, 'error');
+      }
+    }
+  };
+
+  const dismissAlert = (alertId) => {
+    setDismissedAlerts(prev => {
+      const next = new Set(prev);
+      next.add(alertId);
+      return next;
+    });
+  };
+
+  const activeAlerts = alerts.filter(a => !dismissedAlerts.has(a.id));
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetchAlerts();
+      const interval = setInterval(fetchAlerts, 60000);
+      return () => clearInterval(interval);
+    }
+  }, [isAdmin]);
 
   useEffect(() => {
     fetchOrders();
@@ -322,6 +383,184 @@ const Dashboard = ({ user, setActivePage, setSelectedOrderId, showToast }) => {
           )}
         </div>
       </div>
+
+      {/* Alerts Panel (only for Admin) */}
+      {isAdmin && (
+        <>
+          {/* Minimised Tab (Desktop) */}
+          {!isPanelOpen && (
+            <div className="live-alerts-toggle-tab no-print" onClick={() => setIsPanelOpen(true)}>
+              <span>🔴 Alerts ({activeAlerts.length})</span>
+            </div>
+          )}
+
+          {/* Minimised Bell Icon (Mobile) */}
+          {!isPanelOpen && (
+            <div className="live-alerts-mobile-bell no-print" onClick={() => setIsPanelOpen(true)}>
+              <span>🔔</span>
+              {activeAlerts.length > 0 && (
+                <div className="live-alerts-bell-badge">{activeAlerts.length}</div>
+              )}
+            </div>
+          )}
+
+          {/* Slide-in Panel */}
+          <div className={`live-alerts-panel no-print ${!isPanelOpen ? 'collapsed' : ''}`}>
+            <div className="live-alerts-header">
+              <div className="flex align-center gap-1">
+                <span style={{ fontSize: '1rem' }}>🔴</span>
+                <h3 style={{ margin: 0, fontWeight: 700, fontSize: '0.95rem', color: 'var(--primary-color)' }}>
+                  Live Alerts ({activeAlerts.length})
+                </h3>
+              </div>
+              <div className="flex align-center gap-1">
+                <button
+                  type="button"
+                  onClick={fetchAlerts}
+                  className="btn btn-secondary"
+                  style={{ padding: '0.2rem 0.4rem', fontSize: '0.75rem', height: '28px', minHeight: 'auto' }}
+                  disabled={alertsLoading}
+                  title="Refresh alerts"
+                >
+                  🔄
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsPanelOpen(false)}
+                  className="btn btn-secondary"
+                  style={{ padding: '0.2rem 0.4rem', fontSize: '0.85rem', height: '28px', minHeight: 'auto', fontWeight: 700 }}
+                  title="Minimize panel"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            <div className="live-alerts-body">
+              {activeAlerts.length === 0 ? (
+                <div className="live-alerts-empty-state">
+                  <div className="empty-checkmark">✔</div>
+                  <h4 style={{ margin: '0.5rem 0 0.25rem 0', color: 'var(--color-delivered)', fontSize: '0.9rem' }}>All systems normal</h4>
+                  <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--secondary-color)' }}>No active notifications</p>
+                </div>
+              ) : (
+                <div className="live-alerts-list">
+                  {activeAlerts.map((alert, idx) => (
+                    <div
+                      key={alert.id}
+                      className={`alert-card alert-border-${alert.color}`}
+                      style={{ animationDelay: `${idx * 150}ms` }}
+                    >
+                      <button
+                        type="button"
+                        className="alert-dismiss-btn"
+                        onClick={() => dismissAlert(alert.id)}
+                        title="Dismiss alert"
+                      >
+                        ×
+                      </button>
+                      <h4 className="alert-card-title">
+                        {alert.title}
+                      </h4>
+                      <p className="alert-card-msg">{alert.message}</p>
+                      
+                      <div className="alert-card-actions">
+                        {alert.action === 'confirm' && (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              await handleStatusTransition(alert.orderId, 'confirmed');
+                              dismissAlert(alert.id);
+                            }}
+                            className="btn btn-success alert-action-btn"
+                          >
+                            Confirm Now
+                          </button>
+                        )}
+                        {alert.action === 'dispatch' && (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              await handleStatusTransition(alert.orderId, 'dispatched');
+                              dismissAlert(alert.id);
+                            }}
+                            className="btn btn-warning alert-action-btn"
+                          >
+                            Dispatch Now
+                          </button>
+                        )}
+                        {alert.action === 'update_stock' && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingProduct(alert.data);
+                              setEditQty(alert.data.available_qty.toString());
+                            }}
+                            className="btn btn-primary alert-action-btn"
+                          >
+                            Update Stock
+                          </button>
+                        )}
+                        {alert.action === 'view' && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedOrderId(alert.orderId);
+                              setActivePage('order-detail');
+                            }}
+                            className="btn btn-secondary alert-action-btn"
+                          >
+                            View Order
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Centered Stock Adjustment Modal */}
+      {editingProduct && (
+        <div className="modal-backdrop" onClick={() => setEditingProduct(null)}>
+          <div className="modal-content-card" onClick={(e) => e.stopPropagation()}>
+            <button type="button" className="modal-close-btn" onClick={() => setEditingProduct(null)} aria-label="Close modal">✕</button>
+            <div style={{ marginBottom: '1.5rem' }}>
+              <h2 className="modal-title">{editingProduct.name}</h2>
+              <span className="text-muted" style={{ fontSize: '0.85rem' }}>SKU: {editingProduct.sku}</span>
+            </div>
+            
+            <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+              <p style={{ fontSize: '0.95rem', color: 'var(--text-dark)', marginBottom: '0.75rem' }}>
+                Current Stock: <strong style={{ color: 'var(--primary-color)' }}>{editingProduct.available_qty} {editingProduct.unit}</strong>
+              </p>
+              <label className="form-label" htmlFor="dashboard-new-stock-qty" style={{ fontWeight: 600 }}>New Stock Quantity</label>
+              <input
+                id="dashboard-new-stock-qty"
+                type="number"
+                className="form-input"
+                value={editQty}
+                onChange={(e) => setEditQty(e.target.value)}
+                min="0"
+                required
+                autoFocus
+              />
+            </div>
+
+            <div className="flex gap-1" style={{ justifyContent: 'flex-end', alignItems: 'center' }}>
+              <button type="button" className="btn btn-secondary" onClick={() => setEditingProduct(null)}>
+                Cancel
+              </button>
+              <button type="button" className="btn btn-primary" onClick={() => saveStockUpdate(editingProduct.productId)}>
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
