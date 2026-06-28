@@ -20,6 +20,7 @@ const Dashboard = ({ user, setActivePage, setSelectedOrderId, showToast }) => {
   const [alertsLoading, setAlertsLoading] = useState(false);
   const [isPanelOpen, setIsPanelOpen] = useState(true);
   const [dismissedAlerts, setDismissedAlerts] = useState(new Set());
+  const [dismissingAlerts, setDismissingAlerts] = useState(new Set());
   const [editingProduct, setEditingProduct] = useState(null);
   const [editQty, setEditQty] = useState('');
 
@@ -67,6 +68,22 @@ const Dashboard = ({ user, setActivePage, setSelectedOrderId, showToast }) => {
       next.add(alertId);
       return next;
     });
+  };
+
+  const handleDismissWithAnimation = (alertId) => {
+    setDismissingAlerts(prev => {
+      const next = new Set(prev);
+      next.add(alertId);
+      return next;
+    });
+    setTimeout(() => {
+      dismissAlert(alertId);
+      setDismissingAlerts(prev => {
+        const next = new Set(prev);
+        next.delete(alertId);
+        return next;
+      });
+    }, 200);
   };
 
   const activeAlerts = alerts.filter(a => !dismissedAlerts.has(a.id));
@@ -387,19 +404,13 @@ const Dashboard = ({ user, setActivePage, setSelectedOrderId, showToast }) => {
       {/* Alerts Panel (only for Admin) */}
       {isAdmin && (
         <>
-          {/* Minimised Tab (Desktop) */}
+          {/* Minimised Tab (Fixed at vertical center on right edge) */}
           {!isPanelOpen && (
             <div className="live-alerts-toggle-tab no-print" onClick={() => setIsPanelOpen(true)}>
-              <span>🔴 Alerts ({activeAlerts.length})</span>
-            </div>
-          )}
-
-          {/* Minimised Bell Icon (Mobile) */}
-          {!isPanelOpen && (
-            <div className="live-alerts-mobile-bell no-print" onClick={() => setIsPanelOpen(true)}>
-              <span>🔔</span>
+              <span style={{ fontSize: '1rem' }}>🔔</span>
+              <span className="live-alerts-toggle-text">ALERTS</span>
               {activeAlerts.length > 0 && (
-                <div className="live-alerts-bell-badge">{activeAlerts.length}</div>
+                <span className="live-alerts-toggle-badge">{activeAlerts.length}</span>
               )}
             </div>
           )}
@@ -407,28 +418,16 @@ const Dashboard = ({ user, setActivePage, setSelectedOrderId, showToast }) => {
           {/* Slide-in Panel */}
           <div className={`live-alerts-panel no-print ${!isPanelOpen ? 'collapsed' : ''}`}>
             <div className="live-alerts-header">
-              <div className="flex align-center gap-1">
-                <span style={{ fontSize: '1rem' }}>🔴</span>
-                <h3 style={{ margin: 0, fontWeight: 700, fontSize: '0.95rem', color: 'var(--primary-color)' }}>
-                  Live Alerts ({activeAlerts.length})
-                </h3>
+              <div className="flex align-center gap-2">
+                <span className="live-alerts-pulse-dot"></span>
+                <span className="live-alerts-header-title">Live Alerts</span>
               </div>
-              <div className="flex align-center gap-1">
-                <button
-                  type="button"
-                  onClick={fetchAlerts}
-                  className="btn btn-secondary"
-                  style={{ padding: '0.2rem 0.4rem', fontSize: '0.75rem', height: '28px', minHeight: 'auto' }}
-                  disabled={alertsLoading}
-                  title="Refresh alerts"
-                >
-                  🔄
-                </button>
+              <div className="flex align-center gap-2">
+                <span className="live-alerts-count-badge">{activeAlerts.length} active</span>
                 <button
                   type="button"
                   onClick={() => setIsPanelOpen(false)}
-                  className="btn btn-secondary"
-                  style={{ padding: '0.2rem 0.4rem', fontSize: '0.85rem', height: '28px', minHeight: 'auto', fontWeight: 700 }}
+                  className="live-alerts-close-btn"
                   title="Minimize panel"
                 >
                   ✕
@@ -440,39 +439,63 @@ const Dashboard = ({ user, setActivePage, setSelectedOrderId, showToast }) => {
               {activeAlerts.length === 0 ? (
                 <div className="live-alerts-empty-state">
                   <div className="empty-checkmark">✔</div>
-                  <h4 style={{ margin: '0.5rem 0 0.25rem 0', color: 'var(--color-delivered)', fontSize: '0.9rem' }}>All systems normal</h4>
-                  <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--secondary-color)' }}>No active notifications</p>
+                  <h4 className="empty-title">All Clear</h4>
+                  <p className="empty-msg">No active alerts right now.</p>
                 </div>
               ) : (
                 <div className="live-alerts-list">
                   {activeAlerts.map((alert, idx) => (
                     <div
                       key={alert.id}
-                      className={`alert-card alert-border-${alert.color}`}
-                      style={{ animationDelay: `${idx * 150}ms` }}
+                      className={`alert-card alert-card-${alert.color} ${dismissingAlerts.has(alert.id) ? 'dismissing' : ''}`}
+                      style={{ animationDelay: `${idx * 100}ms` }}
                     >
+                      <div className="alert-card-accent"></div>
                       <button
                         type="button"
                         className="alert-dismiss-btn"
-                        onClick={() => dismissAlert(alert.id)}
+                        onClick={() => handleDismissWithAnimation(alert.id)}
                         title="Dismiss alert"
                       >
-                        ×
+                        ✕
                       </button>
-                      <h4 className="alert-card-title">
-                        {alert.title}
-                      </h4>
+                      
+                      {/* Line 1: Icon + Type label */}
+                      <div className="alert-card-meta">
+                        {alert.type === 'overdue_order' && <span>🚨 OVERDUE ORDER</span>}
+                        {alert.type === 'low_stock' && <span>⚠️ LOW STOCK</span>}
+                        {alert.type === 'dispatch_pending' && <span>📦 DISPATCH PENDING</span>}
+                        {alert.type === 'new_order' && <span>✨ NEW ORDER</span>}
+                      </div>
+
+                      {/* Line 2: Title */}
+                      <h4 className="alert-card-title">{alert.title}</h4>
+
+                      {/* Line 3: Message */}
                       <p className="alert-card-msg">{alert.message}</p>
                       
+                      {/* Bottom Action */}
                       <div className="alert-card-actions">
                         {alert.action === 'confirm' && (
                           <button
                             type="button"
                             onClick={async () => {
-                              await handleStatusTransition(alert.orderId, 'confirmed');
-                              dismissAlert(alert.id);
+                              setDismissingAlerts(prev => {
+                                const next = new Set(prev);
+                                next.add(alert.id);
+                                return next;
+                              });
+                              setTimeout(async () => {
+                                await handleStatusTransition(alert.orderId, 'confirmed');
+                                dismissAlert(alert.id);
+                                setDismissingAlerts(prev => {
+                                  const next = new Set(prev);
+                                  next.delete(alert.id);
+                                  return next;
+                                });
+                              }, 200);
                             }}
-                            className="btn btn-success alert-action-btn"
+                            className="alert-action-btn-custom btn-red"
                           >
                             Confirm Now
                           </button>
@@ -481,10 +504,22 @@ const Dashboard = ({ user, setActivePage, setSelectedOrderId, showToast }) => {
                           <button
                             type="button"
                             onClick={async () => {
-                              await handleStatusTransition(alert.orderId, 'dispatched');
-                              dismissAlert(alert.id);
+                              setDismissingAlerts(prev => {
+                                const next = new Set(prev);
+                                next.add(alert.id);
+                                return next;
+                              });
+                              setTimeout(async () => {
+                                await handleStatusTransition(alert.orderId, 'dispatched');
+                                dismissAlert(alert.id);
+                                setDismissingAlerts(prev => {
+                                  const next = new Set(prev);
+                                  next.delete(alert.id);
+                                  return next;
+                                });
+                              }, 200);
                             }}
-                            className="btn btn-warning alert-action-btn"
+                            className="alert-action-btn-custom btn-blue"
                           >
                             Dispatch Now
                           </button>
@@ -496,7 +531,7 @@ const Dashboard = ({ user, setActivePage, setSelectedOrderId, showToast }) => {
                               setEditingProduct(alert.data);
                               setEditQty(alert.data.available_qty.toString());
                             }}
-                            className="btn btn-primary alert-action-btn"
+                            className="alert-action-btn-custom btn-orange"
                           >
                             Update Stock
                           </button>
@@ -508,7 +543,7 @@ const Dashboard = ({ user, setActivePage, setSelectedOrderId, showToast }) => {
                               setSelectedOrderId(alert.orderId);
                               setActivePage('order-detail');
                             }}
-                            className="btn btn-secondary alert-action-btn"
+                            className="alert-action-btn-custom btn-green"
                           >
                             View Order
                           </button>
@@ -518,6 +553,18 @@ const Dashboard = ({ user, setActivePage, setSelectedOrderId, showToast }) => {
                   ))}
                 </div>
               )}
+            </div>
+
+            <div className="live-alerts-footer">
+              <span className="live-alerts-footer-text">Auto-refreshes every 60s</span>
+              <button
+                type="button"
+                onClick={fetchAlerts}
+                className="live-alerts-footer-btn"
+                disabled={alertsLoading}
+              >
+                Refresh
+              </button>
             </div>
           </div>
         </>
