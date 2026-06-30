@@ -47,38 +47,44 @@ router.post('/', authenticateToken, async (req, res) => {
 
     // Process order inside a transaction to validate stocks and save
     const orderId = await runTransaction(async () => {
-      // 1. Validate stocks and fetch prices for all items
+      // 1. Aggregate requested quantities by product_id to validate correctly
+      const productTotals = {};
       for (const item of items) {
         const { product_id, quantity } = item;
         const qty = parseInt(quantity, 10);
         if (isNaN(qty) || qty <= 0) {
           throw new Error(`Invalid quantity for product ID ${product_id}`);
         }
+        productTotals[product_id] = (productTotals[product_id] || 0) + qty;
+      }
 
+      // 2. Validate stocks on aggregated totals
+      for (const productId of Object.keys(productTotals)) {
+        const qtyRequested = productTotals[productId];
         const product = await get(`
           SELECT p.name, COALESCE(s.available_qty, 0) AS available_qty
           FROM products p
           LEFT JOIN warehouse_stock s ON p.id = s.product_id
           WHERE p.id = ?
-        `, [product_id]);
+        `, [productId]);
 
         if (!product) {
-          throw new Error(`Product with ID ${product_id} does not exist`);
+          throw new Error(`Product with ID ${productId} does not exist`);
         }
 
-        if (product.available_qty < qty) {
-          throw new Error(`Insufficient stock for product "${product.name}". Available: ${product.available_qty}, Requested: ${qty}`);
+        if (product.available_qty < qtyRequested) {
+          throw new Error(`Insufficient stock for product "${product.name}". Available: ${product.available_qty}, Requested: ${qtyRequested}`);
         }
       }
 
-      // 2. Create order row
+      // 3. Create order row
       const orderResult = await run(
         `INSERT INTO orders (customer_id, status, delivery_address, notes) VALUES (?, 'pending', ?, ?)`,
         [customerId, delivery_address, notes || '']
       );
       const newOrderId = orderResult.id;
 
-      // 3. Create items and copy prices
+      // 4. Create items and copy prices
       for (const item of items) {
         const { product_id, quantity } = item;
         const qty = parseInt(quantity, 10);
@@ -262,14 +268,20 @@ router.patch('/:id/status', authenticateToken, requireRole('admin'), async (req,
         // Fetch all items
         const items = await query('SELECT product_id, quantity, unit_price FROM order_items WHERE order_id = ?', [orderId]);
         
-        // Validate stock availability
+        // Aggregate quantities by product_id to validate correctly
+        const productTotals = {};
         for (const item of items) {
-          const stock = await get('SELECT available_qty FROM warehouse_stock WHERE product_id = ?', [item.product_id]);
+          productTotals[item.product_id] = (productTotals[item.product_id] || 0) + item.quantity;
+        }
+
+        // Validate stock availability on aggregated totals
+        for (const productId of Object.keys(productTotals)) {
+          const qtyRequested = productTotals[productId];
+          const stock = await get('SELECT available_qty FROM warehouse_stock WHERE product_id = ?', [productId]);
           const available = stock ? stock.available_qty : 0;
-          if (available < item.quantity) {
-            // Fetch name for user friendliness
-            const prod = await get('SELECT name FROM products WHERE id = ?', [item.product_id]);
-            throw new Error(`Insufficient warehouse stock for product "${prod.name}" to confirm order. Available: ${available}, Required: ${item.quantity}`);
+          if (available < qtyRequested) {
+            const prod = await get('SELECT name FROM products WHERE id = ?', [productId]);
+            throw new Error(`Insufficient warehouse stock for product "${prod.name}" to confirm order. Available: ${available}, Required: ${qtyRequested}`);
           }
         }
 
