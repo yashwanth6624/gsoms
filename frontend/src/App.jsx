@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Sidebar from './components/Sidebar';
 import Login from './pages/Login';
@@ -11,11 +11,33 @@ import InsightsPanel from './pages/InsightsPanel';
 
 const AppContent = () => {
   const { user, loading, logout } = useAuth();
-  // State-based routing: 'dashboard', 'place-order', 'order-detail', 'stock', 'invoice-preview', 'insights'
-  const [activePage, setActivePage] = useState('dashboard');
-  const [selectedOrderId, setSelectedOrderId] = useState(null);
+  // State-based routing with session persistence: 'dashboard', 'place-order', 'order-detail', 'stock', 'invoice-preview', 'insights'
+  const [activePage, setActivePage] = useState(() => sessionStorage.getItem('activePage') || 'dashboard');
+  const [selectedOrderId, setSelectedOrderId] = useState(() => {
+    const id = sessionStorage.getItem('selectedOrderId');
+    return id ? parseInt(id, 10) : null;
+  });
   const [toasts, setToasts] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    sessionStorage.setItem('activePage', activePage);
+  }, [activePage]);
+
+  useEffect(() => {
+    if (selectedOrderId !== null) {
+      sessionStorage.setItem('selectedOrderId', selectedOrderId.toString());
+    } else {
+      sessionStorage.removeItem('selectedOrderId');
+    }
+  }, [selectedOrderId]);
+
+  useEffect(() => {
+    if (!user) {
+      sessionStorage.removeItem('activePage');
+      sessionStorage.removeItem('selectedOrderId');
+    }
+  }, [user]);
 
   const showToast = (message, type = 'success') => {
     const id = Date.now();
@@ -76,6 +98,16 @@ const AppContent = () => {
           />
         );
       case 'stock':
+        if (user.role !== 'admin') {
+          return (
+            <Dashboard
+              user={user}
+              setActivePage={setActivePage}
+              setSelectedOrderId={setSelectedOrderId}
+              showToast={showToast}
+            />
+          );
+        }
         return (
           <StockScreen
             user={user}
@@ -91,6 +123,16 @@ const AppContent = () => {
           />
         );
       case 'insights':
+        if (user.role !== 'admin') {
+          return (
+            <Dashboard
+              user={user}
+              setActivePage={setActivePage}
+              setSelectedOrderId={setSelectedOrderId}
+              showToast={showToast}
+            />
+          );
+        }
         return (
           <InsightsPanel
             user={user}

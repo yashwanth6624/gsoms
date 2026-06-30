@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api';
 import StatusBadge from '../components/StatusBadge';
-import { formatCurrency } from '../utils';
+import { formatCurrency, formatLocalDate } from '../utils';
 
 const Dashboard = ({ user, setActivePage, setSelectedOrderId, showToast }) => {
   const [orders, setOrders] = useState([]);
@@ -23,6 +23,7 @@ const Dashboard = ({ user, setActivePage, setSelectedOrderId, showToast }) => {
   const [dismissingAlerts, setDismissingAlerts] = useState(new Set());
   const [editingProduct, setEditingProduct] = useState(null);
   const [editQty, setEditQty] = useState('');
+  const [transitioningId, setTransitioningId] = useState(null);
 
   const isAdmin = user.role === 'admin';
   const hasFilters = statusFilter || customerFilter || startDate || endDate;
@@ -119,7 +120,9 @@ const Dashboard = ({ user, setActivePage, setSelectedOrderId, showToast }) => {
   };
 
   const handleStatusTransition = async (orderId, targetStatus) => {
+    if (transitioningId) return;
     setActionError('');
+    setTransitioningId(orderId);
     try {
       await api.updateOrderStatus(orderId, targetStatus);
       if (showToast) {
@@ -129,6 +132,8 @@ const Dashboard = ({ user, setActivePage, setSelectedOrderId, showToast }) => {
     } catch (err) {
       setActionError(`Action failed: ${err.message}`);
       window.scrollTo(0, 0); // Scroll to top to see error message
+    } finally {
+      setTransitioningId(null);
     }
   };
 
@@ -155,7 +160,7 @@ const Dashboard = ({ user, setActivePage, setSelectedOrderId, showToast }) => {
   }
 
   return (
-    <div className="flex-col">
+    <div className={`flex-col ${isAdmin && isPanelOpen ? 'alerts-panel-open-offset' : ''}`}>
       <div className="page-header">
         <h1 className="page-title">{isAdmin ? 'Admin Management Dashboard' : 'My Supply Orders'}</h1>
         {!isAdmin && (
@@ -317,7 +322,7 @@ const Dashboard = ({ user, setActivePage, setSelectedOrderId, showToast }) => {
                   {orders.map(order => (
                     <tr key={order.id}>
                       <td style={{ fontWeight: 600 }}>#{order.id}</td>
-                      <td>{new Date(order.order_date).toLocaleDateString(undefined, { dateStyle: 'medium' })}</td>
+                      <td>{formatLocalDate(order.order_date)}</td>
                       {isAdmin && (
                         <td>
                           <div className="flex-col">
@@ -353,6 +358,7 @@ const Dashboard = ({ user, setActivePage, setSelectedOrderId, showToast }) => {
                               onClick={() => handleStatusTransition(order.id, 'confirmed')}
                               className="btn btn-success"
                               style={{ padding: '0.35rem 0.75rem', fontSize: '0.85rem' }}
+                              disabled={transitioningId !== null}
                             >
                               Confirm
                             </button>
@@ -363,6 +369,7 @@ const Dashboard = ({ user, setActivePage, setSelectedOrderId, showToast }) => {
                               onClick={() => handleStatusTransition(order.id, 'dispatched')}
                               className="btn btn-warning"
                               style={{ padding: '0.35rem 0.75rem', fontSize: '0.85rem' }}
+                              disabled={transitioningId !== null}
                             >
                               Dispatch
                             </button>
@@ -373,6 +380,7 @@ const Dashboard = ({ user, setActivePage, setSelectedOrderId, showToast }) => {
                               onClick={() => handleStatusTransition(order.id, 'delivered')}
                               className="btn btn-primary"
                               style={{ padding: '0.35rem 0.75rem', fontSize: '0.85rem' }}
+                              disabled={transitioningId !== null}
                             >
                               Deliver
                             </button>

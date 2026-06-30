@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api';
 import StatusBadge from '../components/StatusBadge';
-import { formatCurrency } from '../utils';
+import { formatCurrency, formatLocalDateTime, formatLocalDate } from '../utils';
 
 const OrderDetail = ({ orderId, user, setActivePage, setSelectedOrderId, showToast }) => {
   const [data, setData] = useState(null);
@@ -126,7 +126,7 @@ const OrderDetail = ({ orderId, user, setActivePage, setSelectedOrderId, showToa
               <div className="grid grid-cols-2 gap-2 mb-4">
                 <div>
                   <span className="text-muted" style={{ fontSize: '0.85rem' }}>Order Date</span>
-                  <p>{new Date(order.order_date).toLocaleString()}</p>
+                  <p>{formatLocalDateTime(order.order_date)}</p>
                 </div>
                 <div>
                   <span className="text-muted" style={{ fontSize: '0.85rem' }}>Delivery Address</span>
@@ -245,9 +245,8 @@ const OrderDetail = ({ orderId, user, setActivePage, setSelectedOrderId, showToa
                   const log = getHistoryForStatus(stage.key);
                   const isCompleted = !!log;
                   const isActive = stage.key === order.status;
-                  
-                  return (
-                    <div key={idx} className={`timeline-item ${isCompleted ? 'completed' : ''}`}>
+                                    return (
+                    <div key={stage.key} className={`timeline-item ${isCompleted ? 'completed' : ''}`}>
                       <div className={`timeline-dot ${isCompleted ? 'active' : ''} ${isActive ? 'pulse' : ''}`}></div>
                       <div className="timeline-content">
                         <div className="timeline-header">
@@ -264,7 +263,7 @@ const OrderDetail = ({ orderId, user, setActivePage, setSelectedOrderId, showToa
                         {isCompleted ? (
                           <>
                             <span className="timeline-time">
-                              {new Date(log.changed_at).toLocaleString()}
+                              {formatLocalDateTime(log.changed_at)}
                             </span>
                             <span className="timeline-author">
                               By: <strong>{log.changed_by_name}</strong> ({log.changed_by_role})

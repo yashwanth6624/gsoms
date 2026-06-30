@@ -4,9 +4,35 @@ if (rawApiUrl && !rawApiUrl.endsWith('/api') && !rawApiUrl.endsWith('/api/')) {
 }
 const API_BASE_URL = rawApiUrl;
 
+// Safe localStorage wrapper to prevent mobile Safari private mode crashes
+const safeStorage = {
+  getItem: (key) => {
+    try {
+      return localStorage.getItem(key);
+    } catch (e) {
+      console.warn('localStorage is blocked:', e);
+      return null;
+    }
+  },
+  setItem: (key, value) => {
+    try {
+      localStorage.setItem(key, value);
+    } catch (e) {
+      console.warn('localStorage is blocked:', e);
+    }
+  },
+  removeItem: (key) => {
+    try {
+      localStorage.removeItem(key);
+    } catch (e) {
+      console.warn('localStorage is blocked:', e);
+    }
+  }
+};
+
 // Helper to make fetch calls with auto JWT inclusion
 const request = async (endpoint, options = {}) => {
-  const token = localStorage.getItem('gsoms_token');
+  const token = safeStorage.getItem('gsoms_token');
   const headers = {
     'Content-Type': 'application/json',
     ...options.headers
@@ -44,8 +70,8 @@ export const api = {
       body: JSON.stringify({ email, password })
     });
     if (data.token) {
-      localStorage.setItem('gsoms_token', data.token);
-      localStorage.setItem('gsoms_user', JSON.stringify(data.user));
+      safeStorage.setItem('gsoms_token', data.token);
+      safeStorage.setItem('gsoms_user', JSON.stringify(data.user));
     }
     return data;
   },
@@ -58,12 +84,12 @@ export const api = {
   },
 
   logout: () => {
-    localStorage.removeItem('gsoms_token');
-    localStorage.removeItem('gsoms_user');
+    safeStorage.removeItem('gsoms_token');
+    safeStorage.removeItem('gsoms_user');
   },
 
   getCurrentUser: () => {
-    const userStr = localStorage.getItem('gsoms_user');
+    const userStr = safeStorage.getItem('gsoms_user');
     return userStr ? JSON.parse(userStr) : null;
   },
 

@@ -1495,4 +1495,12 @@ a {
   }
 }
 
+/* Layout spacing adjustment for admin dashboard alerts panel */
+@media (min-width: 1024px) {
+  .alerts-panel-open-offset {
+    padding-right: 320px !important;
+    transition: padding-right 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
+
 

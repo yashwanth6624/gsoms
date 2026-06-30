@@ -10,7 +10,12 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     // Check if user session exists in localStorage
     const savedUser = api.getCurrentUser();
-    const token = localStorage.getItem('gsoms_token');
+    let token = null;
+    try {
+      token = localStorage.getItem('gsoms_token');
+    } catch (e) {
+      console.warn('localStorage is blocked:', e);
+    }
     
     if (savedUser && token) {
       setUser(savedUser);

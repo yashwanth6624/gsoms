@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api';
-import { formatCurrency } from '../utils';
+import { formatCurrency, formatLocalDate } from '../utils';
 
 const InvoicePreview = ({ orderId, setActivePage }) => {
   const [data, setData] = useState(null);
@@ -105,8 +105,8 @@ const InvoicePreview = ({ orderId, setActivePage }) => {
             <div style={{ fontSize: '0.85rem', lineHeight: '1.5' }}>
               <div><strong>Invoice Number:</strong> {invoice.invoice_number}</div>
               <div><strong>Order ID:</strong> #{order.id}</div>
-              <div><strong>Invoice Date:</strong> {new Date(invoice.generated_at).toLocaleDateString(undefined, { dateStyle: 'medium' })}</div>
-              <div><strong>Order Date:</strong> {new Date(order.order_date).toLocaleDateString(undefined, { dateStyle: 'medium' })}</div>
+              <div><strong>Invoice Date:</strong> {formatLocalDate(invoice.generated_at)}</div>
+              <div><strong>Order Date:</strong> {formatLocalDate(order.order_date)}</div>
             </div>
           </div>
         </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api';
-import { formatCurrency } from '../utils';
+import { formatCurrency, formatLocalDate } from '../utils';
 
 const InsightsPanel = ({ user, setActivePage }) => {
   const [insights, setInsights] = useState(null);
@@ -93,7 +93,7 @@ const InsightsPanel = ({ user, setActivePage }) => {
                       {pendingOrdersOld.map(order => (
                         <tr key={order.id}>
                           <td><strong>#{order.id}</strong></td>
-                          <td>{new Date(order.order_date).toLocaleDateString()}</td>
+                          <td>{formatLocalDate(order.order_date, { dateStyle: 'short' })}</td>
                           <td>{order.customer_name}</td>
                         </tr>
                       ))}

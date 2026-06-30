@@ -7,8 +7,8 @@ const OrderForm = ({ setActivePage, setSelectedOrderId, showToast }) => {
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [notes, setNotes] = useState('');
   
-  // Array of items: { product_id, quantity, sku, price, unit, maxStock }
-  const [items, setItems] = useState([{ product_id: '', quantity: 1, sku: '', price: 0, unit: '', maxStock: 0 }]);
+  // Array of items: { id, product_id, quantity, sku, price, unit, maxStock }
+  const [items, setItems] = useState([{ id: 'init-0', product_id: '', quantity: 1, sku: '', price: 0, unit: '', maxStock: 0 }]);
   
   const [loading, setLoading] = useState(false);
   const [fetchingProducts, setFetchingProducts] = useState(true);
@@ -36,6 +36,7 @@ const OrderForm = ({ setActivePage, setSelectedOrderId, showToast }) => {
     
     if (selectedProduct) {
       newItems[index] = {
+        ...newItems[index],
         product_id: productId,
         quantity: 1,
         sku: selectedProduct.sku,
@@ -44,7 +45,7 @@ const OrderForm = ({ setActivePage, setSelectedOrderId, showToast }) => {
         maxStock: selectedProduct.available_qty
       };
     } else {
-      newItems[index] = { product_id: '', quantity: 1, sku: '', price: 0, unit: '', maxStock: 0 };
+      newItems[index] = { id: newItems[index].id, product_id: '', quantity: 1, sku: '', price: 0, unit: '', maxStock: 0 };
     }
     setItems(newItems);
     setError('');
@@ -59,7 +60,7 @@ const OrderForm = ({ setActivePage, setSelectedOrderId, showToast }) => {
   };
 
   const addItemRow = () => {
-    setItems([...items, { product_id: '', quantity: 1, sku: '', price: 0, unit: '', maxStock: 0 }]);
+    setItems([...items, { id: `item-${Date.now()}-${Math.random()}`, product_id: '', quantity: 1, sku: '', price: 0, unit: '', maxStock: 0 }]);
   };
 
   const removeItemRow = (index) => {
@@ -242,7 +243,7 @@ const OrderForm = ({ setActivePage, setSelectedOrderId, showToast }) => {
           </div>
           <div className="card-body">
             {items.map((item, index) => (
-              <div key={index} className="order-item-row">
+              <div key={item.id} className="order-item-row">
                 <div className="order-item-header">
                   <span className="order-item-index">Item #{index + 1}</span>
                   {items.length > 1 && (
